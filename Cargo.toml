@@ -14,5 +14,5 @@ binrw = "0.10.0"
 image = { version = "0.24", features = ["dds"] }
 ddsfile = "0.5.1"
 diva_db = { git = "https://github.com/diva-rust-modding/diva_db" }
-pyo3 = { version = "0.18.1", features = ["extension-module"] }
+pyo3 = { version = "0.18.1", features = ["extension-module", "abi3"] }
 texpresso = "2.0.1"
