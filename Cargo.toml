@@ -10,9 +10,9 @@ crate-type = ["cdylib"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-binrw = "0.10.0"
+binrw = "0.10"
 image = { version = "0.24", features = ["dds"] }
-ddsfile = "0.5.1"
+ddsfile = "0.5"
 diva_db = { git = "https://github.com/diva-rust-modding/diva_db" }
-pyo3 = { version = "0.18.1", features = ["extension-module", "abi3-py37"] }
-texpresso = "2.0.1"
+pyo3 = { version = "0.21", features = ["extension-module", "abi3-py37"] }
+texpresso = "2.0"

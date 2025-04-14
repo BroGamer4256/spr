@@ -58,6 +58,18 @@ impl PySprite {
 			self.height, self.width, self.texture, self.x, self.y
 		))
 	}
+
+	#[new]
+	fn py_new() -> PyResult<Self> {
+		Ok(Self {
+			texture: String::new(),
+			x: 0.0,
+			y: 0.0,
+			width: 0.0,
+			height: 0.0,
+			screen_mode: ScreenMode::HDTV1080,
+		})
+	}
 }
 
 #[pymethods]
@@ -66,8 +78,8 @@ impl PyImage {
 		Ok(format!("PyImage {}x{}", self.width, self.height))
 	}
 
-	#[setter]
-	pub fn replace(&mut self, path: &str) -> PyResult<()> {
+	#[new]
+	pub fn new(path: &str) -> PyResult<Self> {
 		let path = Path::new(path);
 		if !path.is_file() {
 			return Err(PyErr::new::<PyException, _>(format!(
@@ -84,11 +96,17 @@ impl PyImage {
 				)));
 			}
 		};
+		if !image.width().is_power_of_two() || !image.height().is_power_of_two() {
+			return Err(PyErr::new::<PyException, _>(
+				"Image resolution not power of 2",
+			));
+		}
 		let rgba8 = image.to_rgba8();
-		self.data = rgba8.as_bytes().to_vec();
-		self.width = image.width();
-		self.height = image.height();
-		Ok(())
+		Ok(Self {
+			width: image.width(),
+			height: image.height(),
+			data: rgba8.as_bytes().to_vec(),
+		})
 	}
 }
 
@@ -112,14 +130,24 @@ impl PySprSet {
 		Ok(format!("PySprSet {textures:?} {sprites:?}",))
 	}
 
-	pub fn replace_texture(&mut self, texture_name: &str, path: &str) -> PyResult<()> {
-		let texture = self
-			.textures
-			.get_mut(texture_name)
-			.ok_or(PyErr::new::<PyException, _>(format!(
-				"Failed to find texture with name {texture_name}"
-			)))?;
-		texture.replace(path)?;
+	pub fn set_texture(&mut self, texture_name: String, texture: PyImage) -> PyResult<()> {
+		self.textures.insert(texture_name, texture);
+		Ok(())
+	}
+
+	pub fn set_sprite(&mut self, spr_name: String, sprite: PySprite) -> PyResult<()> {
+		let Some(texture) = self.textures.get(&sprite.texture) else {
+			return Err(PyErr::new::<PyException, _>(format!(
+				"Could not find {} in textures",
+				sprite.texture
+			)));
+		};
+		if sprite.x + sprite.width > texture.width as f32
+			|| sprite.y + sprite.height > texture.height as f32
+		{
+			return Err(PyErr::new::<PyException, _>("Sprite too large for texture"));
+		}
+		self.sprites.insert(spr_name, sprite);
 		Ok(())
 	}
 
@@ -136,6 +164,15 @@ impl PySprSet {
 		let mut writer = std::fs::File::create(path)?;
 		sprset.to_writer(&mut writer)?;
 		Ok(())
+	}
+
+	#[new]
+	fn py_new() -> PyResult<Self> {
+		Ok(Self {
+			name: String::new(),
+			textures: BTreeMap::new(),
+			sprites: BTreeMap::new(),
+		})
 	}
 }
 
